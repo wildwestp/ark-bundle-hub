@@ -253,11 +253,6 @@ IMPORTANT: Return ONLY the JSON array, nothing else.`
       setStatus('');
     }
   }, [scanning, categories, notify]);
-    } finally {
-      setScanning(false);
-      setStatus('');
-    }
-  }, [scanning, categories, notify]);
 
   const toggleSave = useCallback((p) => {
     setSaved(prev => prev.find(x => x.id === p.id) ? prev.filter(x => x.id !== p.id) : [...prev, p]);
