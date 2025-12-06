@@ -107,86 +107,18 @@ export default function ArkBundleHub() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          prompt: `You are a product research AI for Amazon FBA sellers. Use web_search to find REAL trending products.
+          prompt: `You are a JSON-only API. Your response must be ONLY valid JSON, nothing else.
 
-TODAY'S DATE: ${currentDate}
+Search TikTok, Instagram, and Amazon for trending ${cat.name.replace(/🔥|🍳|🏠|🧹|💄|📱|🐕|💪|🎮|🚗/g, '').trim()} products in ${currentMonth} ${currentYear}.
 
-SEARCH THESE PLATFORMS:
-- TikTok viral products
-- Instagram Reels trending products  
-- Amazon Best Sellers
-- Social media trending items
+Find 8 real products.
 
-SEARCH QUERIES:
-1. "${cat.searches[0]} ${currentMonth} ${currentYear}"
-2. "${cat.searches[1]} ${currentMonth} ${currentYear}"
-3. "Instagram Reels viral products ${cat.name.replace(/🔥|🍳|🏠|🧹|💄|📱|🐕|💪|🎮|🚗/g, '').trim()} ${currentMonth} ${currentYear}"
-${searchQuery ? `4. "${searchQuery} viral trending ${currentMonth} ${currentYear} TikTok Instagram"` : ''}
-
-FIND: 8-10 REAL products trending NOW on TikTok, Instagram, or Amazon
-
-For EACH product include:
-- Real product name
-- Why it's trending (be specific)
-- Estimated cost & sell price
-- BSR rank if available
-- Review count if available
-
-CRITICAL: Return ONLY a valid JSON array, no other text. Format:
-
+RESPONSE FORMAT - Copy this EXACTLY and fill in real data:
 [
-  {
-    "name": "Exact Product Name",
-    "category": "${cat.name}",
-    "emoji": "📦",
-    "desc": "Why trending on TikTok/Instagram in ${currentMonth}",
-    "asin": "B08ABC123",
-    "price": {
-      "cost": 8,
-      "sell": 25,
-      "margin": 68,
-      "roi": 213,
-      "amazon": 22
-    },
-    "bsr": {
-      "rank": 3500,
-      "category": "Home",
-      "trend": "Rising",
-      "monthlySales": 600
-    },
-    "reviews": {
-      "count": 800,
-      "rating": 4.3
-    },
-    "competition": {
-      "sellers": 45,
-      "level": "Medium",
-      "saturation": 55
-    },
-    "viral": {
-      "score": 82,
-      "platform": "Instagram",
-      "reason": "Viral on Instagram Reels ${currentMonth}",
-      "views": "2M"
-    },
-    "market": {
-      "urgency": "High",
-      "demand": "High"
-    },
-    "suppliers": {
-      "alibaba": 7,
-      "cj": 9
-    },
-    "profitability": {
-      "breakeven": 40,
-      "monthly": 1800,
-      "yearly": 21600
-    },
-    "bundleWith": ["Item A", "Item B"]
-  }
+{"name":"Real Product Name","category":"${cat.name}","emoji":"📦","desc":"Why trending","asin":"B08ABC123","price":{"cost":8,"sell":25,"margin":68,"roi":213},"bsr":{"rank":3500,"category":"Home","trend":"Rising","monthlySales":600},"reviews":{"count":800,"rating":4.3},"competition":{"sellers":45,"level":"Medium"},"viral":{"score":82,"platform":"Instagram","reason":"Viral reason","views":"2M"},"market":{"urgency":"High"},"suppliers":{"alibaba":7,"cj":9},"profitability":{"breakeven":40,"monthly":1800,"yearly":21600},"bundleWith":["Item A","Item B"]}
 ]
 
-IMPORTANT: Return ONLY the JSON array, nothing else.`
+DO NOT include any explanation, text, or commentary. ONLY return the JSON array starting with [ and ending with ].`
         })
       });
 
@@ -210,19 +142,39 @@ IMPORTANT: Return ONLY the JSON array, nothing else.`
 
       let productArray = null;
       
-      // Try to find JSON array in response
-      const jsonMatches = txt.match(/\[[\s\S]*?\]/g);
+      // Strip any text before [ and after ]
+      const startIdx = txt.indexOf('[');
+      const endIdx = txt.lastIndexOf(']');
       
-      if (jsonMatches) {
-        for (const match of jsonMatches) {
-          try {
-            const parsed = JSON.parse(match);
-            if (Array.isArray(parsed) && parsed.length > 0 && parsed[0].name) {
-              productArray = parsed;
-              break;
+      if (startIdx !== -1 && endIdx !== -1 && endIdx > startIdx) {
+        const jsonStr = txt.substring(startIdx, endIdx + 1);
+        console.log('Extracted JSON string:', jsonStr);
+        
+        try {
+          productArray = JSON.parse(jsonStr);
+          if (!Array.isArray(productArray) || productArray.length === 0 || !productArray[0].name) {
+            productArray = null;
+          }
+        } catch (e) {
+          console.log('JSON parse failed:', e);
+        }
+      }
+      
+      // Fallback: Try regex matching
+      if (!productArray) {
+        const jsonMatches = txt.match(/\[[\s\S]*?\]/g);
+        
+        if (jsonMatches) {
+          for (const match of jsonMatches) {
+            try {
+              const parsed = JSON.parse(match);
+              if (Array.isArray(parsed) && parsed.length > 0 && parsed[0].name) {
+                productArray = parsed;
+                break;
+              }
+            } catch (e) {
+              console.log('Parse attempt failed:', e);
             }
-          } catch (e) {
-            console.log('Parse attempt failed:', e);
           }
         }
       }
@@ -527,7 +479,7 @@ IMPORTANT: Return ONLY the JSON array, nothing else.`
             <div className="flex justify-between items-start mb-4">
               <div>
                 <h2 className="text-2xl font-black text-slate-800">Ark Bundle Hub</h2>
-                <p className="text-amber-600 font-bold">Version 2.2 Debugged + Instagram</p>
+                <p className="text-amber-600 font-bold">Version 2.3 JSON Fixed</p>
               </div>
               <button onClick={() => setShowVersion(false)} className="p-2 hover:bg-slate-100 rounded-lg">
                 <Icon name="x" size={24} />
@@ -618,7 +570,7 @@ IMPORTANT: Return ONLY the JSON array, nothing else.`
               <div>
                 <p className="font-bold text-lg">Bundle Intelligence</p>
                 <button onClick={() => setShowVersion(true)} className="text-sm text-purple-300 hover:text-purple-200 flex items-center gap-1">
-                  Multi-Platform Search • v2.2
+                  Multi-Platform Search • v2.3
                   <Icon name="alert" size={12} />
                 </button>
               </div>
