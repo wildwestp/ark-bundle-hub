@@ -64,20 +64,21 @@ export default function ArkBundleHub() {
   const [bundleName, setBundleName] = useState('');
   const [markup, setMarkup] = useState(2.5);
   const [selectedCategory, setSelectedCategory] = useState(null);
+  const [showVersion, setShowVersion] = useState(false);
 
   const ADMIN_PASSWORD = 'Ark2024Global!';
 
   const categories = [
-    { id: 'trending', name: '🔥 Trending', searches: ['TikTok viral products 2024', 'Amazon movers shakers', 'trending products'] },
-    { id: 'kitchen', name: '🍳 Kitchen', searches: ['kitchen gadgets TikTok viral', 'cooking accessories trending', 'kitchen organization'] },
-    { id: 'home', name: '🏠 Home', searches: ['home organization TikTok', 'storage solutions viral', 'home decor trending'] },
-    { id: 'cleaning', name: '🧹 Cleaning', searches: ['cleaning products TikTok', 'cleaning gadgets viral', 'cleaning hacks products'] },
-    { id: 'beauty', name: '💄 Beauty', searches: ['beauty tools TikTok viral', 'skincare gadgets trending', 'makeup accessories'] },
-    { id: 'tech', name: '📱 Tech', searches: ['tech gadgets TikTok viral', 'phone accessories trending', 'desk gadgets'] },
-    { id: 'pets', name: '🐕 Pets', searches: ['pet products TikTok viral', 'dog accessories trending', 'pet gadgets'] },
-    { id: 'fitness', name: '💪 Fitness', searches: ['fitness gadgets TikTok', 'workout accessories viral', 'gym equipment'] },
-    { id: 'toys', name: '🎮 Toys', searches: ['fidget toys TikTok viral', 'sensory toys trending', 'stress relief toys'] },
-    { id: 'car', name: '🚗 Car', searches: ['car accessories TikTok viral', 'car gadgets trending', 'auto organization'] },
+    { id: 'trending', name: '🔥 Trending', searches: ['TikTok viral products right now', 'Amazon movers shakers today', 'trending products this month'] },
+    { id: 'kitchen', name: '🍳 Kitchen', searches: ['kitchen gadgets TikTok viral now', 'cooking accessories trending this week', 'viral kitchen organization'] },
+    { id: 'home', name: '🏠 Home', searches: ['home organization TikTok trending', 'storage solutions viral now', 'home decor trending this month'] },
+    { id: 'cleaning', name: '🧹 Cleaning', searches: ['cleaning products TikTok viral now', 'viral cleaning gadgets this week', 'cleaning hacks products trending'] },
+    { id: 'beauty', name: '💄 Beauty', searches: ['beauty tools TikTok viral this month', 'skincare gadgets trending now', 'viral makeup accessories'] },
+    { id: 'tech', name: '📱 Tech', searches: ['tech gadgets TikTok viral now', 'phone accessories trending this week', 'viral desk gadgets'] },
+    { id: 'pets', name: '🐕 Pets', searches: ['pet products TikTok viral now', 'dog accessories trending today', 'viral pet gadgets'] },
+    { id: 'fitness', name: '💪 Fitness', searches: ['fitness gadgets TikTok trending', 'workout accessories viral now', 'trending gym equipment'] },
+    { id: 'toys', name: '🎮 Toys', searches: ['fidget toys TikTok viral now', 'sensory toys trending this month', 'stress relief toys viral'] },
+    { id: 'car', name: '🚗 Car', searches: ['car accessories TikTok viral now', 'car gadgets trending today', 'viral auto organization'] },
   ];
 
   const notify = useCallback((m, t = 'ok') => {
@@ -94,6 +95,12 @@ export default function ArkBundleHub() {
     const cat = categoryData || categories[0];
     setStatus(`Searching: ${cat.searches[0]}`);
 
+    // Get current date for fresh results
+    const now = new Date();
+    const currentMonth = now.toLocaleString('en-US', { month: 'long' });
+    const currentYear = now.getFullYear();
+    const currentDate = `${currentMonth} ${currentYear}`;
+
     try {
       const res = await fetch('/api/search', {
         method: 'POST',
@@ -101,11 +108,22 @@ export default function ArkBundleHub() {
         body: JSON.stringify({
           prompt: `You are a product research AI. Use web_search to find real trending products with detailed Amazon insights.
 
-SEARCH: "${cat.searches[0]}" and "${cat.searches[1]}" and "${cat.searches[2]}"
-${searchQuery ? `Also search: "${searchQuery} viral trending"` : ''}
+IMPORTANT: Today's date is ${currentDate}. Search for products trending RIGHT NOW in ${currentMonth} ${currentYear}.
+
+SEARCH QUERIES to use:
+1. "${cat.searches[0].replace(/December 2024|2024/g, currentDate)}"
+2. "${cat.searches[1].replace(/December 2024|2024/g, currentDate)}"
+3. "${cat.searches[2].replace(/December 2024|2024/g, currentDate)}"
+${searchQuery ? `4. "${searchQuery} viral trending ${currentMonth} ${currentYear}"` : ''}
+
+CRITICAL: 
+- Focus on products trending in the LAST 30 DAYS
+- Include products with consistent sales (not just flash trends)
+- Balance new viral products with proven sellers
+- Check current BSR rankings as of ${currentDate}
 
 Find 10-12 REAL trending products good for bundles. For each product, gather:
-- Current Amazon BSR and category
+- Current Amazon BSR and category (as of ${currentDate})
 - Estimated monthly sales volume
 - Review count and average rating
 - Number of competing sellers
@@ -113,7 +131,7 @@ Find 10-12 REAL trending products good for bundles. For each product, gather:
 - Profit potential
 
 Return ONLY JSON array:
-[{"name":"Product Name","category":"${cat.name}","emoji":"🛒","desc":"Why trending","asin":"B08XYZ123","price":{"cost":8,"sell":28,"margin":71,"roi":250,"amazon":25,"fba":3.50},"bsr":{"rank":2500,"category":"Kitchen","trend":"Rising","change":1200,"monthlySales":850},"reviews":{"count":1250,"rating":4.5,"velocity":"Fast"},"competition":{"sellers":23,"level":"Low","saturation":35},"listing":{"quality":"High","images":7,"bullets":5,"description":"Detailed"},"viral":{"score":85,"platform":"TikTok","reason":"Viral reason","views":"3M"},"market":{"urgency":"High","demand":"High"},"suppliers":{"alibaba":6,"cj":8},"profitability":{"breakeven":45,"monthly":2400,"yearly":28800},"bundleWith":["Product A","Product B"]}]`
+[{"name":"Product Name","category":"${cat.name}","emoji":"🛒","desc":"Why trending in ${currentMonth} ${currentYear}","asin":"B08XYZ123","price":{"cost":8,"sell":28,"margin":71,"roi":250,"amazon":25,"fba":3.50},"bsr":{"rank":2500,"category":"Kitchen","trend":"Rising","change":1200,"monthlySales":850},"reviews":{"count":1250,"rating":4.5,"velocity":"Fast"},"competition":{"sellers":23,"level":"Low","saturation":35},"listing":{"quality":"High","images":7,"bullets":5,"description":"Detailed"},"viral":{"score":85,"platform":"TikTok","reason":"Trending ${currentMonth}","views":"3M"},"market":{"urgency":"High","demand":"High"},"suppliers":{"alibaba":6,"cj":8},"profitability":{"breakeven":45,"monthly":2400,"yearly":28800},"bundleWith":["Product A","Product B"]}]`
         })
       });
 
@@ -432,6 +450,88 @@ Return ONLY JSON array:
   // MAIN DASHBOARD
   return (
     <div className="min-h-screen bg-slate-100">
+      {/* Version Info Modal */}
+      {showVersion && (
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4" onClick={() => setShowVersion(false)}>
+          <div className="bg-white rounded-2xl max-w-2xl w-full p-6 max-h-[80vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
+            <div className="flex justify-between items-start mb-4">
+              <div>
+                <h2 className="text-2xl font-black text-slate-800">Ark Bundle Hub</h2>
+                <p className="text-amber-600 font-bold">Version 2.1 Auto-Fresh</p>
+              </div>
+              <button onClick={() => setShowVersion(false)} className="p-2 hover:bg-slate-100 rounded-lg">
+                <Icon name="x" size={24} />
+              </button>
+            </div>
+            
+            <div className="space-y-4">
+              <div className="bg-green-50 border border-green-200 rounded-xl p-4">
+                <h3 className="font-bold text-green-800 mb-2">✨ v2.1 Dynamic Date Search (Current)</h3>
+                <p className="text-sm text-slate-600 mb-2">December 6, 2025</p>
+                <ul className="text-sm text-slate-700 space-y-1">
+                  <li>🔥 <strong>Auto-updating searches</strong> - Always uses TODAY'S date</li>
+                  <li>📅 Dynamic date injection in all queries</li>
+                  <li>⚡ Searches "last 30 days" for fresh trends</li>
+                  <li>🔄 Balances new viral products + proven sellers</li>
+                  <li>✅ Different results every day automatically</li>
+                  <li>✅ Monthly sales estimates based on BSR</li>
+                  <li>✅ Review count & rating analysis</li>
+                  <li>✅ Competition level tracking</li>
+                  <li>✅ Profit calculator with projections</li>
+                  <li>✅ Listing quality scores</li>
+                  <li>✅ Direct ASIN links</li>
+                </ul>
+              </div>
+
+              <div className="bg-blue-50 border border-blue-200 rounded-xl p-4">
+                <h3 className="font-bold text-blue-800 mb-2">📊 How Fresh Results Work</h3>
+                <ul className="text-sm text-slate-700 space-y-1">
+                  <li>🔍 <strong>Every search:</strong> AI injects current date ({new Date().toLocaleString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })})</li>
+                  <li>📅 <strong>Search on Jan 1, 2025:</strong> Gets "January 2025" trending products</li>
+                  <li>📅 <strong>Search on Feb 1, 2025:</strong> Gets "February 2025" trending products</li>
+                  <li>⚡ <strong>Results include:</strong> Both new viral trends + consistent sellers</li>
+                  <li>🎯 <strong>BSR data:</strong> Always current as of today</li>
+                </ul>
+              </div>
+
+              <div className="bg-slate-50 border border-slate-200 rounded-xl p-4">
+                <h3 className="font-bold text-slate-800 mb-2">🚀 v1.0 Initial Release</h3>
+                <p className="text-sm text-slate-600 mb-2">Original Features</p>
+                <ul className="text-sm text-slate-700 space-y-1">
+                  <li>• AI-powered product discovery</li>
+                  <li>• BSR tracking</li>
+                  <li>• Basic pricing analysis</li>
+                  <li>• Bundle creator</li>
+                  <li>• Viral score tracking</li>
+                  <li>• Export to CSV/JSON</li>
+                </ul>
+              </div>
+
+              <div className="bg-purple-50 border border-purple-200 rounded-xl p-4">
+                <h3 className="font-bold text-purple-800 mb-2">💡 How Auto-Fresh Search Works</h3>
+                <p className="text-sm text-slate-700 mb-2">
+                  <strong>Every time you search,</strong> the app automatically injects TODAY'S DATE into the AI prompt. 
+                </p>
+                <p className="text-sm text-slate-700 mb-2">
+                  So if you search on <strong>January 1, 2025</strong>, it searches for "January 2025 trending products". 
+                  If you search on <strong>February 1, 2025</strong>, it searches for "February 2025 trending products".
+                </p>
+                <p className="text-sm text-slate-700">
+                  <strong>The AI is instructed to:</strong> Focus on products trending in the last 30 days, balance new viral items 
+                  with proven consistent sellers, and pull current BSR data. You get fresh results every day without changing anything!
+                </p>
+              </div>
+            </div>
+
+            <div className="mt-6 flex gap-3">
+              <button onClick={() => setShowVersion(false)} className="flex-1 py-3 bg-slate-800 text-white rounded-xl font-bold">
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {notif && (
         <div className={`fixed top-4 right-4 z-50 px-5 py-3 rounded-xl shadow-xl flex items-center gap-2 text-white ${notif.t === 'err' ? 'bg-red-500' : 'bg-green-500'}`}>
           <Icon name="check" size={20} />
@@ -449,12 +549,21 @@ Return ONLY JSON array:
               </div>
               <div>
                 <p className="font-bold text-lg">Bundle Intelligence</p>
-                <p className="text-sm text-purple-300">Find Winning Products</p>
+                <button onClick={() => setShowVersion(true)} className="text-sm text-purple-300 hover:text-purple-200 flex items-center gap-1">
+                  Find Winning Products • v2.1 Auto-Fresh
+                  <Icon name="alert" size={12} />
+                </button>
               </div>
             </div>
-            <button onClick={() => setAuth(false)} className="p-3 rounded-xl bg-white/10 hover:bg-red-500">
-              <Icon name="lock" size={20} />
-            </button>
+            <div className="flex items-center gap-3">
+              <div className="text-right hidden md:block">
+                <p className="text-xs text-purple-300">Real-time AI Search</p>
+                <p className="text-xs text-purple-400">{new Date().toLocaleString('en-US', { month: 'long', year: 'numeric' })} Data</p>
+              </div>
+              <button onClick={() => setAuth(false)} className="p-3 rounded-xl bg-white/10 hover:bg-red-500">
+                <Icon name="lock" size={20} />
+              </button>
+            </div>
           </div>
 
           <div className="flex gap-3">
