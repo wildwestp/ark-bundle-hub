@@ -62,6 +62,8 @@ export default function ArkBundleHubV3() {
   const [competitors, setCompetitors] = useState([]);
   const [saved, setSaved] = useState([]);
   const [bundles, setBundles] = useState([]);
+  const [savedBundles, setSavedBundles] = useState([]);
+  const [bundleName, setBundleName] = useState('');
   const [scanning, setScanning] = useState(false);
   const [status, setStatus] = useState('');
   const [error, setError] = useState('');
@@ -190,6 +192,8 @@ export default function ArkBundleHubV3() {
     const currentYear = now.getFullYear();
 
     try {
+      console.log('🔍 Starting search...', { category: cat.name, searchQuery });
+      
       const res = await fetch('/api/search', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -209,11 +213,13 @@ Return ONLY the JSON array starting with [ and ending with ].`
         })
       });
 
+      console.log('✅ API response received', { status: res.status, ok: res.ok });
+
       const data = await res.json();
-      console.log('API Response:', JSON.stringify(data, null, 2));
+      console.log('📦 API Response Data:', JSON.stringify(data, null, 2));
       
       if (data.error) {
-        console.error('API Error:', data.error);
+        console.error('❌ API Error:', data.error);
         throw new Error(typeof data.error === 'string' ? data.error : JSON.stringify(data.error));
       }
       
@@ -224,24 +230,30 @@ Return ONLY the JSON array starting with [ and ending with ].`
         }
       }
 
-      console.log('Extracted text:', txt);
+      console.log('📝 Extracted text length:', txt.length);
+      console.log('📝 Extracted text preview:', txt.substring(0, 200));
 
       let productArray = null;
       
       const startIdx = txt.indexOf('[');
       const endIdx = txt.lastIndexOf(']');
       
+      console.log('🔎 JSON search:', { startIdx, endIdx, hasArray: startIdx !== -1 && endIdx !== -1 });
+      
       if (startIdx !== -1 && endIdx !== -1 && endIdx > startIdx) {
         const jsonStr = txt.substring(startIdx, endIdx + 1);
-        console.log('Extracted JSON string:', jsonStr);
+        console.log('✂️ Extracted JSON string length:', jsonStr.length);
         
         try {
           productArray = JSON.parse(jsonStr);
+          console.log('✅ JSON parsed successfully!', { count: productArray?.length });
+          
           if (!Array.isArray(productArray) || productArray.length === 0 || !productArray[0].name) {
+            console.warn('⚠️ Invalid product array structure');
             productArray = null;
           }
         } catch (e) {
-          console.log('JSON parse failed:', e);
+          console.error('❌ JSON parse failed:', e.message);
         }
       }
 
@@ -256,9 +268,12 @@ Return ONLY the JSON array starting with [ and ending with ].`
           reviews: p.reviews || {},
           competition: p.competition || { level: 'Medium' },
         }));
+        
+        console.log('🎉 Products ready:', prods.length);
         setProducts(prods);
         notify(`Found ${prods.length} products!`);
       } else {
+        console.error('❌ No valid products found');
         throw new Error('AI returned no products. Try different category.');
       }
     } catch (err) {
@@ -307,6 +322,36 @@ Return ONLY the JSON array starting with [ and ending with ].`
   }, []);
 
   const inBundle = useCallback((id) => bundles.some(b => b.id === id), [bundles]);
+
+  const saveCurrentBundle = useCallback(() => {
+    if (bundles.length === 0) {
+      notify('Add products to bundle first!', 'err');
+      return;
+    }
+    const name = bundleName.trim() || `Bundle ${savedBundles.length + 1}`;
+    const newBundle = {
+      id: Date.now(),
+      name,
+      products: [...bundles],
+      created: new Date().toLocaleDateString(),
+      totalCost: bundles.reduce((sum, p) => sum + (p.price?.cost || 0), 0),
+      bundlePrice: bundles.reduce((sum, p) => sum + (p.price?.sell || 0), 0) * 0.8,
+    };
+    setSavedBundles(prev => [...prev, newBundle]);
+    setBundles([]);
+    setBundleName('');
+    notify(`Bundle "${name}" saved!`);
+  }, [bundles, bundleName, savedBundles.length, notify]);
+
+  const deleteSavedBundle = useCallback((id) => {
+    setSavedBundles(prev => prev.filter(b => b.id !== id));
+    notify('Bundle deleted');
+  }, [notify]);
+
+  const loadBundle = useCallback((bundle) => {
+    setBundles(bundle.products);
+    notify(`Loaded "${bundle.name}"`);
+  }, [notify]);
 
   // Export functions
   const exportCSV = useCallback(() => {
@@ -425,7 +470,7 @@ Return ONLY the JSON array starting with [ and ending with ].`
               <Icon name="bookmark" size={18} /> Saved ({saved.length})
             </button>
             <button onClick={() => setActiveTab('bundles')} className={`px-5 py-3 rounded-xl text-sm font-semibold whitespace-nowrap flex items-center gap-2 ${activeTab === 'bundles' ? 'bg-green-500 text-white' : 'bg-white/10 text-white/80'}`}>
-              <Icon name="layers" size={18} /> Bundles ({bundles.length})
+              <Icon name="layers" size={18} /> Bundles ({savedBundles.length})
             </button>
           </div>
         </div>
@@ -504,6 +549,7 @@ Return ONLY the JSON array starting with [ and ending with ].`
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {products.map(p => {
                 const validation = getValidationScore(p);
+                const isExpanded = expanded === p.id;
                 return (
                   <div key={p.id} className="bg-white rounded-2xl border-2 border-slate-200 shadow-lg overflow-hidden hover:shadow-xl transition-shadow">
                     {/* Validation Score Bar */}
@@ -541,6 +587,116 @@ Return ONLY the JSON array starting with [ and ending with ].`
                           <div className="font-bold text-green-700">{p.price?.margin || 0}%</div>
                         </div>
                       </div>
+
+                      {/* Expandable Details */}
+                      {isExpanded && (
+                        <div className="mb-4 space-y-3 border-t-2 border-slate-100 pt-4">
+                          {/* Pricing Grid */}
+                          <div className="bg-slate-50 rounded-xl p-4">
+                            <h4 className="font-bold text-slate-700 mb-3 text-sm">💰 Pricing Breakdown</h4>
+                            <div className="grid grid-cols-2 gap-2 text-xs">
+                              <div>
+                                <span className="text-slate-500">Cost:</span>
+                                <span className="font-bold text-slate-800 ml-2">${p.price?.cost || 0}</span>
+                              </div>
+                              <div>
+                                <span className="text-slate-500">Sell:</span>
+                                <span className="font-bold text-green-600 ml-2">${p.price?.sell || 0}</span>
+                              </div>
+                              <div>
+                                <span className="text-slate-500">Margin:</span>
+                                <span className="font-bold text-blue-600 ml-2">{p.price?.margin || 0}%</span>
+                              </div>
+                              <div>
+                                <span className="text-slate-500">ROI:</span>
+                                <span className="font-bold text-purple-600 ml-2">{p.price?.roi || 0}%</span>
+                              </div>
+                            </div>
+                          </div>
+
+                          {/* Competition & Reviews */}
+                          <div className="grid grid-cols-2 gap-2">
+                            <div className="bg-orange-50 rounded-xl p-3">
+                              <div className="text-xs text-slate-500">Competition</div>
+                              <div className={`font-bold text-sm ${p.competition?.level === 'Low' ? 'text-green-600' : p.competition?.level === 'Medium' ? 'text-orange-600' : 'text-red-600'}`}>
+                                {p.competition?.level || 'N/A'}
+                              </div>
+                              <div className="text-xs text-slate-500">{p.competition?.sellers || 0} sellers</div>
+                            </div>
+                            <div className="bg-yellow-50 rounded-xl p-3">
+                              <div className="text-xs text-slate-500">Reviews</div>
+                              <div className="font-bold text-sm text-yellow-700">⭐ {p.reviews?.rating || 'N/A'}</div>
+                              <div className="text-xs text-slate-500">{(p.reviews?.count || 0).toLocaleString()} reviews</div>
+                            </div>
+                          </div>
+
+                          {/* Suppliers */}
+                          {(p.suppliers?.alibaba || p.suppliers?.cj) && (
+                            <div className="bg-purple-50 rounded-xl p-3">
+                              <h4 className="font-bold text-purple-700 mb-2 text-sm">🏭 Suppliers</h4>
+                              <div className="grid grid-cols-2 gap-2 text-xs">
+                                {p.suppliers?.alibaba && (
+                                  <div>
+                                    <span className="text-slate-600">Alibaba:</span>
+                                    <span className="font-bold text-purple-600 ml-1">${p.suppliers.alibaba}</span>
+                                  </div>
+                                )}
+                                {p.suppliers?.cj && (
+                                  <div>
+                                    <span className="text-slate-600">CJ:</span>
+                                    <span className="font-bold text-purple-600 ml-1">${p.suppliers.cj}</span>
+                                  </div>
+                                )}
+                              </div>
+                            </div>
+                          )}
+
+                          {/* Profitability */}
+                          {p.profitability && (
+                            <div className="bg-green-50 rounded-xl p-3">
+                              <h4 className="font-bold text-green-700 mb-2 text-sm">📊 Profit Potential</h4>
+                              <div className="space-y-1 text-xs">
+                                <div className="flex justify-between">
+                                  <span className="text-slate-600">Break-even:</span>
+                                  <span className="font-bold">{p.profitability.breakeven} units</span>
+                                </div>
+                                <div className="flex justify-between">
+                                  <span className="text-slate-600">Monthly:</span>
+                                  <span className="font-bold text-green-600">${p.profitability.monthly?.toLocaleString()}</span>
+                                </div>
+                                <div className="flex justify-between">
+                                  <span className="text-slate-600">Yearly:</span>
+                                  <span className="font-bold text-green-700">${p.profitability.yearly?.toLocaleString()}</span>
+                                </div>
+                              </div>
+                            </div>
+                          )}
+
+                          {/* Quick Links */}
+                          <div className="flex gap-2">
+                            {p.asin && (
+                              <a href={`https://amazon.com/dp/${p.asin}`} target="_blank" rel="noopener noreferrer" className="flex-1 py-2 px-3 bg-orange-500 text-white text-xs font-bold rounded-lg text-center hover:bg-orange-600">
+                                View on Amazon
+                              </a>
+                            )}
+                            <a href={`https://alibaba.com/trade/search?SearchText=${encodeURIComponent(p.name)}`} target="_blank" rel="noopener noreferrer" className="flex-1 py-2 px-3 bg-blue-500 text-white text-xs font-bold rounded-lg text-center hover:bg-blue-600">
+                              Find Supplier
+                            </a>
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Expand Button */}
+                      <button 
+                        onClick={() => setExpanded(isExpanded ? null : p.id)}
+                        className="w-full py-2 mb-3 text-xs text-slate-500 hover:text-slate-700 flex items-center justify-center gap-1"
+                      >
+                        {isExpanded ? (
+                          <>Less Details <Icon name="chevronUp" size={14} /></>
+                        ) : (
+                          <>More Details <Icon name="chevronDown" size={14} /></>
+                        )}
+                      </button>
 
                       {/* Action Buttons */}
                       <div className="flex gap-2">
@@ -830,71 +986,171 @@ Return ONLY the JSON array starting with [ and ending with ].`
         {activeTab === 'bundles' && (
           <div>
             <div className="bg-white rounded-2xl p-6 shadow-lg mb-6">
-              <h2 className="text-2xl font-black text-slate-800 flex items-center gap-3">
-                <Icon name="layers" size={32} className="text-green-600" />
-                Bundle Builder ({bundles.length})
-              </h2>
+              <div className="flex items-center justify-between">
+                <h2 className="text-2xl font-black text-slate-800 flex items-center gap-3">
+                  <Icon name="layers" size={32} className="text-green-600" />
+                  Bundle Builder
+                </h2>
+                <div className="text-sm text-slate-500">
+                  Current: {bundles.length} items | Saved: {savedBundles.length} bundles
+                </div>
+              </div>
             </div>
 
-            {bundles.length === 0 ? (
-              <div className="text-center py-20">
-                <Icon name="layers" size={64} className="mx-auto text-slate-300 mb-4" />
-                <p className="text-slate-500 text-lg">No products in bundle yet</p>
-              </div>
-            ) : (
-              <div>
-                {/* Bundle Summary */}
-                <div className="bg-gradient-to-r from-green-50 to-emerald-50 border-2 border-green-200 rounded-2xl p-8 mb-6">
-                  <h3 className="text-xl font-bold text-green-800 mb-4">Bundle Summary</h3>
-                  <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-                    <div>
+            {/* Current Bundle Being Built */}
+            {bundles.length > 0 && (
+              <div className="mb-6">
+                <div className="bg-gradient-to-r from-green-50 to-emerald-50 border-2 border-green-200 rounded-2xl p-6 mb-4">
+                  <h3 className="text-lg font-bold text-green-800 mb-4">📦 Current Bundle (Unsaved)</h3>
+                  
+                  {/* Bundle Name Input */}
+                  <div className="mb-4">
+                    <input
+                      type="text"
+                      value={bundleName}
+                      onChange={e => setBundleName(e.target.value)}
+                      placeholder="Enter bundle name (optional)"
+                      className="w-full px-4 py-3 border-2 border-green-200 rounded-xl focus:border-green-500 outline-none"
+                    />
+                  </div>
+
+                  {/* Bundle Summary */}
+                  <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-4">
+                    <div className="bg-white rounded-xl p-4 border border-green-200">
                       <div className="text-sm text-green-600 mb-1">Items</div>
-                      <div className="text-3xl font-black text-green-700">{bundles.length}</div>
+                      <div className="text-2xl font-black text-green-700">{bundles.length}</div>
                     </div>
-                    <div>
+                    <div className="bg-white rounded-xl p-4 border border-green-200">
                       <div className="text-sm text-green-600 mb-1">Total Cost</div>
-                      <div className="text-3xl font-black text-green-700">
+                      <div className="text-2xl font-black text-green-700">
                         ${bundles.reduce((sum, p) => sum + (p.price?.cost || 0), 0).toFixed(2)}
                       </div>
                     </div>
-                    <div>
-                      <div className="text-sm text-green-600 mb-1">Bundle Price</div>
-                      <div className="text-3xl font-black text-green-700">
+                    <div className="bg-white rounded-xl p-4 border border-green-200">
+                      <div className="text-sm text-green-600 mb-1">Bundle Price (20% off)</div>
+                      <div className="text-2xl font-black text-green-700">
                         ${(bundles.reduce((sum, p) => sum + (p.price?.sell || 0), 0) * 0.8).toFixed(2)}
                       </div>
                     </div>
-                    <div>
+                    <div className="bg-white rounded-xl p-4 border border-green-200">
                       <div className="text-sm text-green-600 mb-1">Bundle Profit</div>
-                      <div className="text-3xl font-black text-green-700">
+                      <div className="text-2xl font-black text-green-700">
                         ${(bundles.reduce((sum, p) => sum + (p.price?.sell || 0), 0) * 0.8 - bundles.reduce((sum, p) => sum + (p.price?.cost || 0), 0) - (bundles.reduce((sum, p) => sum + (p.price?.sell || 0), 0) * 0.8 * 0.15) - 5).toFixed(2)}
                       </div>
                     </div>
                   </div>
+
+                  {/* Save Bundle Button */}
+                  <button
+                    onClick={saveCurrentBundle}
+                    className="w-full py-4 bg-green-600 hover:bg-green-700 text-white font-bold rounded-xl flex items-center justify-center gap-2"
+                  >
+                    <Icon name="check" size={20} />
+                    Save This Bundle
+                  </button>
                 </div>
 
-                {/* Bundle Items */}
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {/* Current Bundle Items */}
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
                   {bundles.map(p => (
-                    <div key={p.id} className="bg-white rounded-2xl border-2 border-green-200 shadow-lg p-5">
-                      <div className="flex justify-between items-start mb-3">
+                    <div key={p.id} className="bg-white rounded-xl border-2 border-green-200 shadow p-4">
+                      <div className="flex justify-between items-start mb-2">
                         <div>
                           <span className="text-2xl">{p.emoji}</span>
-                          <h3 className="font-bold text-slate-800 mt-2">{p.name}</h3>
+                          <h4 className="font-bold text-slate-800 text-sm mt-1">{p.name}</h4>
                         </div>
+                        <button onClick={() => toggleBundle(p)} className="p-2 bg-red-100 text-red-600 rounded-lg hover:bg-red-200">
+                          <Icon name="x" size={16} />
+                        </button>
                       </div>
-                      <div className="grid grid-cols-2 gap-2 mb-3">
+                      <div className="grid grid-cols-2 gap-2 text-xs">
                         <div className="bg-slate-50 p-2 rounded text-center">
-                          <div className="text-xs text-slate-500">Cost</div>
+                          <div className="text-slate-500">Cost</div>
                           <div className="font-bold">${p.price?.cost}</div>
                         </div>
                         <div className="bg-slate-50 p-2 rounded text-center">
-                          <div className="text-xs text-slate-500">Sell</div>
+                          <div className="text-slate-500">Sell</div>
                           <div className="font-bold">${p.price?.sell}</div>
                         </div>
                       </div>
-                      <button onClick={() => toggleBundle(p)} className="w-full py-2 bg-green-100 text-green-600 rounded-xl font-bold">
-                        Remove
-                      </button>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {bundles.length === 0 && savedBundles.length === 0 && (
+              <div className="text-center py-20">
+                <Icon name="layers" size={64} className="mx-auto text-slate-300 mb-4" />
+                <p className="text-slate-500 text-lg mb-2">No bundles yet</p>
+                <p className="text-slate-400 text-sm">Go to Discover tab and click "+ Bundle" on products</p>
+              </div>
+            )}
+
+            {/* Saved Bundles */}
+            {savedBundles.length > 0 && (
+              <div>
+                <h3 className="text-xl font-bold text-slate-800 mb-4 flex items-center gap-2">
+                  <Icon name="bookmark" size={24} />
+                  Saved Bundles ({savedBundles.length})
+                </h3>
+                <div className="space-y-4">
+                  {savedBundles.map(bundle => (
+                    <div key={bundle.id} className="bg-white rounded-2xl border-2 border-slate-200 shadow-lg p-6">
+                      <div className="flex items-center justify-between mb-4">
+                        <div>
+                          <h4 className="text-lg font-bold text-slate-800">{bundle.name}</h4>
+                          <p className="text-sm text-slate-500">Created: {bundle.created} • {bundle.products.length} items</p>
+                        </div>
+                        <div className="flex gap-2">
+                          <button
+                            onClick={() => loadBundle(bundle)}
+                            className="px-4 py-2 bg-blue-500 text-white rounded-xl font-bold hover:bg-blue-600 flex items-center gap-2"
+                          >
+                            <Icon name="layers" size={16} />
+                            Load
+                          </button>
+                          <button
+                            onClick={() => deleteSavedBundle(bundle.id)}
+                            className="px-4 py-2 bg-red-500 text-white rounded-xl font-bold hover:bg-red-600"
+                          >
+                            <Icon name="x" size={16} />
+                          </button>
+                        </div>
+                      </div>
+
+                      {/* Bundle Summary */}
+                      <div className="grid grid-cols-4 gap-3 mb-4">
+                        <div className="bg-blue-50 rounded-lg p-3 text-center">
+                          <div className="text-xs text-blue-600">Items</div>
+                          <div className="text-lg font-bold text-blue-700">{bundle.products.length}</div>
+                        </div>
+                        <div className="bg-red-50 rounded-lg p-3 text-center">
+                          <div className="text-xs text-red-600">Cost</div>
+                          <div className="text-lg font-bold text-red-700">${bundle.totalCost.toFixed(2)}</div>
+                        </div>
+                        <div className="bg-green-50 rounded-lg p-3 text-center">
+                          <div className="text-xs text-green-600">Price</div>
+                          <div className="text-lg font-bold text-green-700">${bundle.bundlePrice.toFixed(2)}</div>
+                        </div>
+                        <div className="bg-purple-50 rounded-lg p-3 text-center">
+                          <div className="text-xs text-purple-600">Profit</div>
+                          <div className="text-lg font-bold text-purple-700">
+                            ${(bundle.bundlePrice - bundle.totalCost - (bundle.bundlePrice * 0.15) - 5).toFixed(2)}
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Bundle Products */}
+                      <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+                        {bundle.products.map(p => (
+                          <div key={p.id} className="bg-slate-50 rounded-lg p-2">
+                            <div className="text-lg mb-1">{p.emoji}</div>
+                            <div className="text-xs font-semibold text-slate-700 truncate">{p.name}</div>
+                            <div className="text-xs text-slate-500">${p.price?.sell}</div>
+                          </div>
+                        ))}
+                      </div>
                     </div>
                   ))}
                 </div>
