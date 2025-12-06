@@ -29,6 +29,13 @@ const Icon = ({ name, size = 24, className = "" }) => {
     chevronDown: <polyline points="6 9 12 15 18 9" />,
     chevronUp: <polyline points="18 15 12 9 6 15" />,
     alert: <><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" /><line x1="12" y1="9" x2="12" y2="13" /><line x1="12" y1="17" x2="12.01" y2="17" /></>,
+    star: <><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" /></>,
+    users: <><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" /><circle cx="9" cy="7" r="4" /><path d="M23 21v-2a4 4 0 0 0-3-3.87" /><path d="M16 3.13a4 4 0 0 1 0 7.75" /></>,
+    barChart: <><line x1="12" y1="20" x2="12" y2="10" /><line x1="18" y1="20" x2="18" y2="4" /><line x1="6" y1="20" x2="6" y2="16" /></>,
+    dollarSign: <><line x1="12" y1="1" x2="12" y2="23" /><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" /></>,
+    target: <><circle cx="12" cy="12" r="10" /><circle cx="12" cy="12" r="6" /><circle cx="12" cy="12" r="2" /></>,
+    package: <><line x1="16.5" y1="9.4" x2="7.5" y2="4.21" /><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z" /><polyline points="3.27 6.96 12 12.01 20.73 6.96" /><line x1="12" y1="22.08" x2="12" y2="12" /></>,
+    activity: <><polyline points="22 12 18 12 15 21 9 3 6 12 2 12" /></>,
   };
   return (
     <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
@@ -92,15 +99,21 @@ export default function ArkBundleHub() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          prompt: `You are a product research AI. Use web_search to find real trending products.
+          prompt: `You are a product research AI. Use web_search to find real trending products with detailed Amazon insights.
 
 SEARCH: "${cat.searches[0]}" and "${cat.searches[1]}" and "${cat.searches[2]}"
 ${searchQuery ? `Also search: "${searchQuery} viral trending"` : ''}
 
-Find 10-12 REAL trending products good for bundles.
+Find 10-12 REAL trending products good for bundles. For each product, gather:
+- Current Amazon BSR and category
+- Estimated monthly sales volume
+- Review count and average rating
+- Number of competing sellers
+- Listing quality indicators
+- Profit potential
 
 Return ONLY JSON array:
-[{"name":"Product Name","category":"${cat.name}","emoji":"🛒","desc":"Why trending","price":{"cost":8,"sell":28,"margin":71,"roi":250,"amazon":25},"bsr":{"rank":2500,"trend":"Rising","change":1200},"viral":{"score":85,"platform":"TikTok","reason":"Viral reason","views":"3M"},"market":{"competition":"Low","urgency":"High"},"suppliers":{"alibaba":6,"cj":8},"bundleWith":["Product A","Product B"]}]`
+[{"name":"Product Name","category":"${cat.name}","emoji":"🛒","desc":"Why trending","asin":"B08XYZ123","price":{"cost":8,"sell":28,"margin":71,"roi":250,"amazon":25,"fba":3.50},"bsr":{"rank":2500,"category":"Kitchen","trend":"Rising","change":1200,"monthlySales":850},"reviews":{"count":1250,"rating":4.5,"velocity":"Fast"},"competition":{"sellers":23,"level":"Low","saturation":35},"listing":{"quality":"High","images":7,"bullets":5,"description":"Detailed"},"viral":{"score":85,"platform":"TikTok","reason":"Viral reason","views":"3M"},"market":{"urgency":"High","demand":"High"},"suppliers":{"alibaba":6,"cj":8},"profitability":{"breakeven":45,"monthly":2400,"yearly":28800},"bundleWith":["Product A","Product B"]}]`
         })
       });
 
@@ -232,21 +245,28 @@ Return ONLY JSON array:
     const pr = p.price || {};
     const vr = p.viral || {};
     const mk = p.market || {};
+    const bsr = p.bsr || {};
+    const rev = p.reviews || {};
+    const comp = p.competition || {};
+    const lst = p.listing || {};
+    const prof = p.profitability || {};
     
     return (
       <div className={`bg-white rounded-2xl border-2 ${inBundle(p.id) ? 'border-amber-400' : 'border-slate-200'} shadow-lg overflow-hidden`}>
         <div className={`h-2 ${mk.urgency === 'High' ? 'bg-gradient-to-r from-red-500 to-orange-500' : 'bg-gradient-to-r from-amber-400 to-orange-400'}`} />
         <div className="p-5">
           <div className="flex justify-between items-start gap-3 mb-4">
-            <div>
-              <div className="flex items-center gap-2 mb-2">
+            <div className="flex-1">
+              <div className="flex items-center gap-2 mb-2 flex-wrap">
                 <span className="text-3xl">{p.emoji || '📦'}</span>
                 <span className="text-xs bg-slate-100 text-slate-600 px-3 py-1 rounded-full">{p.category}</span>
                 {mk.urgency === 'High' && <span className="text-xs bg-red-100 text-red-600 px-3 py-1 rounded-full font-bold">🔥 HOT</span>}
+                {comp.level === 'Low' && <span className="text-xs bg-green-100 text-green-600 px-3 py-1 rounded-full font-bold">✓ Low Competition</span>}
               </div>
-              <h3 className="font-bold text-slate-800 text-lg">{p.name}</h3>
+              <h3 className="font-bold text-slate-800 text-lg mb-1">{p.name}</h3>
+              {p.asin && <p className="text-xs text-slate-500">ASIN: {p.asin}</p>}
             </div>
-            <div className="bg-gradient-to-br from-amber-400 to-orange-500 text-white px-4 py-3 rounded-2xl text-center">
+            <div className="bg-gradient-to-br from-amber-400 to-orange-500 text-white px-4 py-3 rounded-2xl text-center shrink-0">
               <div className="text-xs opacity-90">SCORE</div>
               <div className="text-2xl font-black">{vr.score || '-'}</div>
             </div>
@@ -254,15 +274,50 @@ Return ONLY JSON array:
 
           <p className="text-slate-600 mb-4">{p.desc}</p>
 
-          {p.bsr?.rank && (
-            <div className="bg-orange-50 border border-orange-200 rounded-xl p-3 mb-4 flex justify-between items-center">
-              <span className="font-bold text-orange-700 flex items-center gap-2">
-                <Icon name="award" size={16} /> BSR #{p.bsr.rank.toLocaleString()}
-              </span>
-              {p.bsr.trend === 'Rising' && <span className="text-green-600 font-bold flex items-center gap-1"><Icon name="arrowUp" size={14} /> +{p.bsr.change}</span>}
+          {/* BSR & Monthly Sales */}
+          {bsr.rank && (
+            <div className="bg-gradient-to-r from-orange-50 to-yellow-50 border border-orange-200 rounded-xl p-3 mb-4">
+              <div className="flex justify-between items-center mb-2">
+                <span className="font-bold text-orange-700 flex items-center gap-2">
+                  <Icon name="award" size={16} /> BSR #{bsr.rank.toLocaleString()}
+                </span>
+                {bsr.trend === 'Rising' && <span className="text-green-600 font-bold flex items-center gap-1"><Icon name="arrowUp" size={14} /> +{bsr.change}</span>}
+              </div>
+              {bsr.category && <p className="text-xs text-slate-600 mb-1">Category: {bsr.category}</p>}
+              {bsr.monthlySales && (
+                <div className="flex items-center gap-2 bg-white/50 px-3 py-2 rounded-lg mt-2">
+                  <Icon name="barChart" size={14} className="text-green-600" />
+                  <span className="text-sm font-bold text-green-700">~{bsr.monthlySales.toLocaleString()} units/mo</span>
+                </div>
+              )}
             </div>
           )}
 
+          {/* Reviews & Competition */}
+          <div className="grid grid-cols-2 gap-2 mb-4">
+            {rev.count && (
+              <div className="bg-blue-50 border border-blue-200 rounded-xl p-3">
+                <div className="flex items-center gap-2 mb-1">
+                  <Icon name="star" size={14} className="text-blue-600" />
+                  <span className="text-xs text-slate-600">Reviews</span>
+                </div>
+                <div className="font-bold text-blue-700">{rev.count.toLocaleString()}</div>
+                {rev.rating && <div className="text-xs text-slate-600">⭐ {rev.rating} avg</div>}
+              </div>
+            )}
+            {comp.sellers && (
+              <div className={`border rounded-xl p-3 ${comp.level === 'Low' ? 'bg-green-50 border-green-200' : comp.level === 'Medium' ? 'bg-yellow-50 border-yellow-200' : 'bg-red-50 border-red-200'}`}>
+                <div className="flex items-center gap-2 mb-1">
+                  <Icon name="users" size={14} className={comp.level === 'Low' ? 'text-green-600' : comp.level === 'Medium' ? 'text-yellow-600' : 'text-red-600'} />
+                  <span className="text-xs text-slate-600">Sellers</span>
+                </div>
+                <div className={`font-bold ${comp.level === 'Low' ? 'text-green-700' : comp.level === 'Medium' ? 'text-yellow-700' : 'text-red-700'}`}>{comp.sellers}</div>
+                <div className="text-xs text-slate-600">{comp.level} competition</div>
+              </div>
+            )}
+          </div>
+
+          {/* Pricing Grid */}
           <div className="grid grid-cols-4 gap-2 mb-4">
             <div className="bg-slate-100 p-3 rounded-xl text-center"><div className="text-xs text-slate-500">Cost</div><div className="font-bold">${pr.cost}</div></div>
             <div className="bg-blue-100 p-3 rounded-xl text-center"><div className="text-xs text-slate-500">Sell</div><div className="font-bold text-blue-700">${pr.sell}</div></div>
@@ -270,6 +325,22 @@ Return ONLY JSON array:
             <div className="bg-purple-100 p-3 rounded-xl text-center"><div className="text-xs text-slate-500">ROI</div><div className="font-bold text-purple-700">{pr.roi}%</div></div>
           </div>
 
+          {/* Profitability Estimate */}
+          {prof.monthly && (
+            <div className="bg-gradient-to-r from-green-50 to-emerald-50 border border-green-200 rounded-xl p-3 mb-4">
+              <div className="flex items-center gap-2 mb-2">
+                <Icon name="dollarSign" size={16} className="text-green-600" />
+                <span className="font-bold text-green-700">Profit Potential</span>
+              </div>
+              <div className="grid grid-cols-2 gap-2 text-sm">
+                <div><span className="text-slate-600">Monthly:</span> <span className="font-bold text-green-700">${prof.monthly.toLocaleString()}</span></div>
+                <div><span className="text-slate-600">Yearly:</span> <span className="font-bold text-green-700">${prof.yearly.toLocaleString()}</span></div>
+              </div>
+              {prof.breakeven && <p className="text-xs text-slate-600 mt-1">Break even at {prof.breakeven} units</p>}
+            </div>
+          )}
+
+          {/* Viral Info */}
           {vr.reason && (
             <div className="bg-pink-50 border border-pink-200 rounded-xl p-3 mb-4">
               <div className="flex items-center gap-2 mb-1">
@@ -281,6 +352,7 @@ Return ONLY JSON array:
             </div>
           )}
 
+          {/* Bundle Suggestions */}
           {p.bundleWith && p.bundleWith.length > 0 && (
             <div className="bg-purple-50 border border-purple-200 rounded-xl p-3 mb-4">
               <div className="flex items-center gap-2 mb-2">
@@ -295,6 +367,7 @@ Return ONLY JSON array:
             </div>
           )}
 
+          {/* Action Buttons */}
           <div className="flex gap-2">
             <button onClick={() => toggleBundle(p)} className={`flex-1 py-3 rounded-xl font-bold flex items-center justify-center gap-2 ${inBundle(p.id) ? 'bg-amber-500 text-white' : 'bg-slate-100 text-slate-700'}`}>
               <Icon name="plus" size={18} /> {inBundle(p.id) ? 'Added ✓' : 'Add to Bundle'}
@@ -307,17 +380,45 @@ Return ONLY JSON array:
             </button>
           </div>
 
+          {/* Expanded Details */}
           {exp && (
             <div className="mt-4 pt-4 border-t-2 border-dashed space-y-4">
-              {p.suppliers && (
-                <div className="flex flex-wrap gap-2">
-                  {Object.entries(p.suppliers).map(([name, price]) => (
-                    <span key={name} className="bg-slate-100 px-3 py-2 rounded-lg text-sm"><strong className="capitalize">{name}:</strong> ${price}</span>
-                  ))}
+              {/* Listing Quality */}
+              {lst.quality && (
+                <div className="bg-slate-50 border border-slate-200 rounded-xl p-3">
+                  <div className="flex items-center gap-2 mb-2">
+                    <Icon name="package" size={16} className="text-slate-600" />
+                    <span className="font-bold text-slate-700">Listing Quality: {lst.quality}</span>
+                  </div>
+                  <div className="grid grid-cols-3 gap-2 text-xs">
+                    {lst.images && <div className="text-slate-600">📸 {lst.images} images</div>}
+                    {lst.bullets && <div className="text-slate-600">• {lst.bullets} bullets</div>}
+                    {lst.description && <div className="text-slate-600">📝 {lst.description}</div>}
+                  </div>
                 </div>
               )}
+
+              {/* Supplier Pricing */}
+              {p.suppliers && (
+                <div>
+                  <p className="text-sm font-bold text-slate-700 mb-2">Supplier Options:</p>
+                  <div className="flex flex-wrap gap-2">
+                    {Object.entries(p.suppliers).map(([name, price]) => (
+                      <span key={name} className="bg-slate-100 px-3 py-2 rounded-lg text-sm"><strong className="capitalize">{name}:</strong> ${price}</span>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Quick Links */}
               <div className="flex gap-2">
-                <a href={`https://amazon.com/s?k=${encodeURIComponent(p.name)}`} target="_blank" rel="noopener noreferrer" className="flex-1 text-center py-3 bg-orange-500 text-white rounded-xl font-medium">Amazon</a>
+                {p.asin ? (
+                  <a href={`https://amazon.com/dp/${p.asin}`} target="_blank" rel="noopener noreferrer" className="flex-1 text-center py-3 bg-orange-500 text-white rounded-xl font-medium flex items-center justify-center gap-2">
+                    <Icon name="externalLink" size={16} /> Amazon
+                  </a>
+                ) : (
+                  <a href={`https://amazon.com/s?k=${encodeURIComponent(p.name)}`} target="_blank" rel="noopener noreferrer" className="flex-1 text-center py-3 bg-orange-500 text-white rounded-xl font-medium">Search Amazon</a>
+                )}
                 <a href={`https://alibaba.com/trade/search?SearchText=${encodeURIComponent(p.name)}`} target="_blank" rel="noopener noreferrer" className="flex-1 text-center py-3 bg-amber-500 text-white rounded-xl font-medium">Alibaba</a>
                 <a href={`https://cjdropshipping.com/search.html?keyword=${encodeURIComponent(p.name)}`} target="_blank" rel="noopener noreferrer" className="flex-1 text-center py-3 bg-blue-500 text-white rounded-xl font-medium">CJ</a>
               </div>
