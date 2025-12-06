@@ -36,6 +36,7 @@ const Icon = ({ name, size = 24, className = "" }) => {
     target: <><circle cx="12" cy="12" r="10" /><circle cx="12" cy="12" r="6" /><circle cx="12" cy="12" r="2" /></>,
     package: <><line x1="16.5" y1="9.4" x2="7.5" y2="4.21" /><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z" /><polyline points="3.27 6.96 12 12.01 20.73 6.96" /><line x1="12" y1="22.08" x2="12" y2="12" /></>,
     activity: <><polyline points="22 12 18 12 15 21 9 3 6 12 2 12" /></>,
+    instagram: <><rect x="2" y="2" width="20" height="20" rx="5" ry="5" /><path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z" /><line x1="17.5" y1="6.5" x2="17.51" y2="6.5" /></>,
   };
   return (
     <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
@@ -93,7 +94,7 @@ export default function ArkBundleHub() {
     setProducts([]);
     
     const cat = categoryData || categories[0];
-    setStatus(`Searching: ${cat.searches[0]}`);
+    setStatus(`Searching TikTok, Instagram & Amazon...`);
 
     // Get current date for fresh results
     const now = new Date();
@@ -106,36 +107,97 @@ export default function ArkBundleHub() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          prompt: `You are a product research AI. Use web_search to find real trending products with detailed Amazon insights.
+          prompt: `You are a product research AI for Amazon FBA sellers. Use web_search to find REAL trending products.
 
-IMPORTANT: Today's date is ${currentDate}. Search for products trending RIGHT NOW in ${currentMonth} ${currentYear}.
+TODAY'S DATE: ${currentDate}
 
-SEARCH QUERIES to use:
-1. "${cat.searches[0].replace(/December 2024|2024/g, currentDate)}"
-2. "${cat.searches[1].replace(/December 2024|2024/g, currentDate)}"
-3. "${cat.searches[2].replace(/December 2024|2024/g, currentDate)}"
-${searchQuery ? `4. "${searchQuery} viral trending ${currentMonth} ${currentYear}"` : ''}
+SEARCH THESE PLATFORMS:
+- TikTok viral products
+- Instagram Reels trending products  
+- Amazon Best Sellers
+- Social media trending items
 
-CRITICAL: 
-- Focus on products trending in the LAST 30 DAYS
-- Include products with consistent sales (not just flash trends)
-- Balance new viral products with proven sellers
-- Check current BSR rankings as of ${currentDate}
+SEARCH QUERIES:
+1. "${cat.searches[0]} ${currentMonth} ${currentYear}"
+2. "${cat.searches[1]} ${currentMonth} ${currentYear}"
+3. "Instagram Reels viral products ${cat.name.replace(/🔥|🍳|🏠|🧹|💄|📱|🐕|💪|🎮|🚗/g, '').trim()} ${currentMonth} ${currentYear}"
+${searchQuery ? `4. "${searchQuery} viral trending ${currentMonth} ${currentYear} TikTok Instagram"` : ''}
 
-Find 10-12 REAL trending products good for bundles. For each product, gather:
-- Current Amazon BSR and category (as of ${currentDate})
-- Estimated monthly sales volume
-- Review count and average rating
-- Number of competing sellers
-- Listing quality indicators
-- Profit potential
+FIND: 8-10 REAL products trending NOW on TikTok, Instagram, or Amazon
 
-Return ONLY JSON array:
-[{"name":"Product Name","category":"${cat.name}","emoji":"🛒","desc":"Why trending in ${currentMonth} ${currentYear}","asin":"B08XYZ123","price":{"cost":8,"sell":28,"margin":71,"roi":250,"amazon":25,"fba":3.50},"bsr":{"rank":2500,"category":"Kitchen","trend":"Rising","change":1200,"monthlySales":850},"reviews":{"count":1250,"rating":4.5,"velocity":"Fast"},"competition":{"sellers":23,"level":"Low","saturation":35},"listing":{"quality":"High","images":7,"bullets":5,"description":"Detailed"},"viral":{"score":85,"platform":"TikTok","reason":"Trending ${currentMonth}","views":"3M"},"market":{"urgency":"High","demand":"High"},"suppliers":{"alibaba":6,"cj":8},"profitability":{"breakeven":45,"monthly":2400,"yearly":28800},"bundleWith":["Product A","Product B"]}]`
+For EACH product include:
+- Real product name
+- Why it's trending (be specific)
+- Estimated cost & sell price
+- BSR rank if available
+- Review count if available
+
+CRITICAL: Return ONLY a valid JSON array, no other text. Format:
+
+[
+  {
+    "name": "Exact Product Name",
+    "category": "${cat.name}",
+    "emoji": "📦",
+    "desc": "Why trending on TikTok/Instagram in ${currentMonth}",
+    "asin": "B08ABC123",
+    "price": {
+      "cost": 8,
+      "sell": 25,
+      "margin": 68,
+      "roi": 213,
+      "amazon": 22
+    },
+    "bsr": {
+      "rank": 3500,
+      "category": "Home",
+      "trend": "Rising",
+      "monthlySales": 600
+    },
+    "reviews": {
+      "count": 800,
+      "rating": 4.3
+    },
+    "competition": {
+      "sellers": 45,
+      "level": "Medium",
+      "saturation": 55
+    },
+    "viral": {
+      "score": 82,
+      "platform": "Instagram",
+      "reason": "Viral on Instagram Reels ${currentMonth}",
+      "views": "2M"
+    },
+    "market": {
+      "urgency": "High",
+      "demand": "High"
+    },
+    "suppliers": {
+      "alibaba": 7,
+      "cj": 9
+    },
+    "profitability": {
+      "breakeven": 40,
+      "monthly": 1800,
+      "yearly": 21600
+    },
+    "bundleWith": ["Item A", "Item B"]
+  }
+]
+
+IMPORTANT: Return ONLY the JSON array, nothing else.`
         })
       });
 
       const data = await res.json();
+      
+      console.log('API Response:', data); // Debug log
+      
+      // Better error handling
+      if (data.error) {
+        throw new Error(data.error);
+      }
       
       let txt = '';
       if (data.content) {
@@ -144,20 +206,23 @@ Return ONLY JSON array:
         }
       }
 
+      console.log('Extracted text:', txt); // Debug log
+
       let productArray = null;
-      const trimmed = txt.trim();
-      if (trimmed.startsWith('[')) {
-        try { productArray = JSON.parse(trimmed); } catch(e) {}
-      }
       
-      if (!productArray) {
-        const matches = txt.match(/\[[\s\S]*\]/g);
-        if (matches) {
-          for (const m of matches) {
-            try {
-              const p = JSON.parse(m);
-              if (Array.isArray(p) && p.length > 0 && p[0].name) { productArray = p; break; }
-            } catch(e) {}
+      // Try to find JSON array in response
+      const jsonMatches = txt.match(/\[[\s\S]*?\]/g);
+      
+      if (jsonMatches) {
+        for (const match of jsonMatches) {
+          try {
+            const parsed = JSON.parse(match);
+            if (Array.isArray(parsed) && parsed.length > 0 && parsed[0].name) {
+              productArray = parsed;
+              break;
+            }
+          } catch (e) {
+            console.log('Parse attempt failed:', e);
           }
         }
       }
@@ -168,16 +233,26 @@ Return ONLY JSON array:
           id: `p-${Date.now()}-${i}`,
           price: p.price || { cost: 10, sell: 30, margin: 67, roi: 200 },
           viral: p.viral || { score: 75, platform: 'TikTok' },
-          market: p.market || { competition: 'Medium', urgency: 'Medium' },
+          market: p.market || { urgency: 'Medium', demand: 'Medium' },
+          bsr: p.bsr || {},
+          reviews: p.reviews || {},
+          competition: p.competition || { level: 'Medium' },
         }));
         setProducts(prods);
         notify(`Found ${prods.length} products!`);
       } else {
-        throw new Error('No products found - try different search');
+        console.error('No valid products found in response');
+        throw new Error('AI returned no products. Try different search terms or category.');
       }
     } catch (err) {
-      setError(err.message);
+      console.error('Search error:', err);
+      setError(err.message || 'Search failed - check console for details');
       notify('Search failed', 'err');
+    } finally {
+      setScanning(false);
+      setStatus('');
+    }
+  }, [scanning, categories, notify]);
     } finally {
       setScanning(false);
       setStatus('');
@@ -457,7 +532,7 @@ Return ONLY JSON array:
             <div className="flex justify-between items-start mb-4">
               <div>
                 <h2 className="text-2xl font-black text-slate-800">Ark Bundle Hub</h2>
-                <p className="text-amber-600 font-bold">Version 2.1 Auto-Fresh</p>
+                <p className="text-amber-600 font-bold">Version 2.2 Debugged + Instagram</p>
               </div>
               <button onClick={() => setShowVersion(false)} className="p-2 hover:bg-slate-100 rounded-lg">
                 <Icon name="x" size={24} />
@@ -466,31 +541,29 @@ Return ONLY JSON array:
             
             <div className="space-y-4">
               <div className="bg-green-50 border border-green-200 rounded-xl p-4">
-                <h3 className="font-bold text-green-800 mb-2">✨ v2.1 Dynamic Date Search (Current)</h3>
+                <h3 className="font-bold text-green-800 mb-2">✨ v2.2 Debugged + Instagram (Current)</h3>
                 <p className="text-sm text-slate-600 mb-2">December 6, 2025</p>
                 <ul className="text-sm text-slate-700 space-y-1">
-                  <li>🔥 <strong>Auto-updating searches</strong> - Always uses TODAY'S date</li>
-                  <li>📅 Dynamic date injection in all queries</li>
-                  <li>⚡ Searches "last 30 days" for fresh trends</li>
-                  <li>🔄 Balances new viral products + proven sellers</li>
-                  <li>✅ Different results every day automatically</li>
-                  <li>✅ Monthly sales estimates based on BSR</li>
-                  <li>✅ Review count & rating analysis</li>
-                  <li>✅ Competition level tracking</li>
-                  <li>✅ Profit calculator with projections</li>
-                  <li>✅ Listing quality scores</li>
-                  <li>✅ Direct ASIN links</li>
+                  <li>🐛 <strong>Fixed search errors</strong> - Better error handling & debugging</li>
+                  <li>📸 <strong>Instagram Reels search</strong> - Now finds viral Instagram products!</li>
+                  <li>🔍 Searches TikTok + Instagram + Amazon simultaneously</li>
+                  <li>💬 Console logging for debugging issues</li>
+                  <li>⚡ Improved JSON parsing from AI responses</li>
+                  <li>✅ Better error messages when search fails</li>
+                  <li>🔥 Auto-updating date system</li>
+                  <li>📊 Monthly sales, reviews, competition data</li>
+                  <li>💰 Profit calculations</li>
                 </ul>
               </div>
 
               <div className="bg-blue-50 border border-blue-200 rounded-xl p-4">
-                <h3 className="font-bold text-blue-800 mb-2">📊 How Fresh Results Work</h3>
+                <h3 className="font-bold text-blue-800 mb-2">📱 Multi-Platform Search</h3>
                 <ul className="text-sm text-slate-700 space-y-1">
-                  <li>🔍 <strong>Every search:</strong> AI injects current date ({new Date().toLocaleString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })})</li>
-                  <li>📅 <strong>Search on Jan 1, 2025:</strong> Gets "January 2025" trending products</li>
-                  <li>📅 <strong>Search on Feb 1, 2025:</strong> Gets "February 2025" trending products</li>
-                  <li>⚡ <strong>Results include:</strong> Both new viral trends + consistent sellers</li>
-                  <li>🎯 <strong>BSR data:</strong> Always current as of today</li>
+                  <li>📱 <strong>TikTok:</strong> Viral videos and trending hashtags</li>
+                  <li>📸 <strong>Instagram Reels:</strong> Trending Reels and viral products</li>
+                  <li>🛒 <strong>Amazon:</strong> Best Sellers and BSR rankings</li>
+                  <li>🔄 <strong>Cross-platform:</strong> Finds products trending on multiple platforms</li>
+                  <li>📅 <strong>Current data:</strong> {new Date().toLocaleString('en-US', { month: 'long', year: 'numeric' })}</li>
                 </ul>
               </div>
 
@@ -550,14 +623,14 @@ Return ONLY JSON array:
               <div>
                 <p className="font-bold text-lg">Bundle Intelligence</p>
                 <button onClick={() => setShowVersion(true)} className="text-sm text-purple-300 hover:text-purple-200 flex items-center gap-1">
-                  Find Winning Products • v2.1 Auto-Fresh
+                  Multi-Platform Search • v2.2
                   <Icon name="alert" size={12} />
                 </button>
               </div>
             </div>
             <div className="flex items-center gap-3">
               <div className="text-right hidden md:block">
-                <p className="text-xs text-purple-300">Real-time AI Search</p>
+                <p className="text-xs text-purple-300">TikTok • Instagram • Amazon</p>
                 <p className="text-xs text-purple-400">{new Date().toLocaleString('en-US', { month: 'long', year: 'numeric' })} Data</p>
               </div>
               <button onClick={() => setAuth(false)} className="p-3 rounded-xl bg-white/10 hover:bg-red-500">
