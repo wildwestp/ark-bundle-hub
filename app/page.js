@@ -393,7 +393,7 @@ Return ONLY the JSON array starting with [ and ending with ].`
               <Icon name="gift" size={48} className="text-white" />
             </div>
             <h1 className="text-4xl font-black text-white mb-2">Ark Bundle Hub</h1>
-            <p className="text-purple-300">V3.0 Powerhouse Edition</p>
+            <p className="text-purple-300">V3.1 Complete Edition</p>
           </div>
           <div className="bg-white/10 backdrop-blur rounded-3xl p-8 border border-white/20">
             <div className="space-y-4">
@@ -447,7 +447,7 @@ Return ONLY the JSON array starting with [ and ending with ].`
               </div>
               <div>
                 <p className="font-bold text-lg">Powerhouse Intelligence</p>
-                <p className="text-sm text-purple-300">TikTok • Instagram • Amazon • v3.0</p>
+                <p className="text-sm text-purple-300">TikTok • Instagram • Amazon • v3.1</p>
               </div>
             </div>
             <button onClick={() => setAuth(false)} className="p-3 rounded-xl bg-white/10 hover:bg-red-500">
