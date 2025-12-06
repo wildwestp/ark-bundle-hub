@@ -124,11 +124,12 @@ DO NOT include any explanation, text, or commentary. ONLY return the JSON array 
 
       const data = await res.json();
       
-      console.log('API Response:', data); // Debug log
+      console.log('API Response:', JSON.stringify(data, null, 2)); // Better logging
       
       // Better error handling
       if (data.error) {
-        throw new Error(data.error);
+        console.error('API Error:', data.error);
+        throw new Error(typeof data.error === 'string' ? data.error : JSON.stringify(data.error));
       }
       
       let txt = '';
@@ -198,8 +199,11 @@ DO NOT include any explanation, text, or commentary. ONLY return the JSON array 
       }
     } catch (err) {
       console.error('Search error:', err);
-      setError(err.message || 'Search failed - check console for details');
-      notify('Search failed', 'err');
+      console.error('Error details:', JSON.stringify(err, null, 2));
+      
+      const errorMsg = err.message || err.toString() || 'Search failed - check console';
+      setError(errorMsg);
+      notify(errorMsg.substring(0, 50), 'err');
     } finally {
       setScanning(false);
       setStatus('');
